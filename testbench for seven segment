@@ -1,0 +1,36 @@
+module seven_segment_tb;
+
+    reg clk;
+    reg [15:0] score;
+    wire [6:0] seg;
+    wire [3:0] an;
+
+ 
+    seven_segment_display uut (
+        .clk(clk),
+        .score(score),
+        .seg(seg),
+        .an(an)
+    );
+	 
+	 integer i;
+	 // Clock generation: 100 MHz = 10 ns period
+    always #5 clk = ~clk;
+
+    initial begin
+       
+        clk = 0;
+        score = 0;
+
+
+      
+      for (i=0; i<65536;i = i+1)
+		begin
+		score = i;
+		#15;
+		end
+
+        #100;
+    end
+
+endmodule
