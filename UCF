@@ -1,0 +1,65 @@
+## ================= CLOCK =================
+set_property PACKAGE_PIN E3 [get_ports clk_in1]
+set_property IOSTANDARD LVCMOS33 [get_ports clk_in1]
+
+## ================= RESET =================
+set_property PACKAGE_PIN N17 [get_ports reset]
+set_property IOSTANDARD LVCMOS33 [get_ports reset]
+
+## ================= VGA OUTPUT =================
+# VGA Red (4 bits)
+set_property PACKAGE_PIN A3 [get_ports vgaRed[0]]
+set_property PACKAGE_PIN B4 [get_ports vgaRed[1]]
+set_property PACKAGE_PIN C5 [get_ports vgaRed[2]]
+set_property PACKAGE_PIN A4 [get_ports vgaRed[3]]
+set_property IOSTANDARD LVCMOS33 [get_ports {vgaRed[*]}]
+
+# VGA Green (4 bits)
+set_property PACKAGE_PIN C6 [get_ports vgaGreen[0]]
+set_property PACKAGE_PIN A5 [get_ports vgaGreen[1]]
+set_property PACKAGE_PIN B6 [get_ports vgaGreen[2]]
+set_property PACKAGE_PIN A6 [get_ports vgaGreen[3]]
+set_property IOSTANDARD LVCMOS33 [get_ports {vgaGreen[*]}]
+
+# VGA Blue (4 bits)
+set_property PACKAGE_PIN B7 [get_ports vgaBlue[0]]
+set_property PACKAGE_PIN C7 [get_ports vgaBlue[1]]
+set_property PACKAGE_PIN D7 [get_ports vgaBlue[2]]
+set_property PACKAGE_PIN D8 [get_ports vgaBlue[3]]
+set_property IOSTANDARD LVCMOS33 [get_ports {vgaBlue[*]}]
+
+# VGA Synchronization
+set_property PACKAGE_PIN B11 [get_ports hSync]
+set_property PACKAGE_PIN B12 [get_ports vSync]
+set_property IOSTANDARD LVCMOS33 [get_ports {hSync vSync}]
+
+## ================= ACCELEROMETER SPI =================
+set_property PACKAGE_PIN E15 [get_ports ACL_MISO]
+set_property PACKAGE_PIN F14 [get_ports ACL_MOSI]
+set_property PACKAGE_PIN F15 [get_ports ACL_SCLK]
+set_property PACKAGE_PIN D15 [get_ports ACL_CSN]
+set_property IOSTANDARD LVCMOS33 [get_ports {ACL_MISO ACL_MOSI ACL_SCLK ACL_CSN}]
+
+## ================= 7-SEGMENT DISPLAY =================
+# an[3:0] → 4 used, arranged LEFT to RIGHT = TIME [an3:an2], SCORE [an1:an0]
+set_property PACKAGE_PIN J14 [get_ports an[3]]   ;# Most left → Tens of TIME
+set_property PACKAGE_PIN T9  [get_ports an[2]]   ;#          → Units of TIME
+set_property PACKAGE_PIN J18 [get_ports an[1]]   ;#          → Tens of SCORE
+set_property PACKAGE_PIN J17 [get_ports an[0]]   ;# Most right → Units of SCORE
+set_property IOSTANDARD LVCMOS33 [get_ports {an[3] an[2] an[1] an[0]}]
+
+# Segment Outputs (seg[6:0])
+set_property PACKAGE_PIN T10 [get_ports seg[0]] ;# a
+set_property PACKAGE_PIN R10 [get_ports seg[1]] ;# b
+set_property PACKAGE_PIN K16 [get_ports seg[2]] ;# c
+set_property PACKAGE_PIN K13 [get_ports seg[3]] ;# d
+set_property PACKAGE_PIN P15 [get_ports seg[4]] ;# e
+set_property PACKAGE_PIN T11 [get_ports seg[5]] ;# f
+set_property PACKAGE_PIN L18 [get_ports seg[6]] ;# g
+set_property IOSTANDARD LVCMOS33 [get_ports {seg[0] seg[1] seg[2] seg[3] seg[4] seg[5] seg[6]}]
+
+# Decimal Point (Unused)
+# set_property PACKAGE_PIN H15 [get_ports seg[7]]
+# set_property IOSTANDARD LVCMOS33 [get_ports seg[7]]
+
+## ================= END OF CONSTRAINTS =================
