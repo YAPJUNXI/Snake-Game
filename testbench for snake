@@ -1,0 +1,80 @@
+`timescale 1ns / 1ps
+
+module snake_tb;
+
+    // Inputs
+    reg clk;
+    reg rst;
+    reg apple;
+    reg collision;
+    reg [1:0] direction;
+
+    // Outputs
+    wire [7:0] snake_x_array [0:255];
+    wire [7:0] snake_y_array [0:255];
+    wire [7:0] snakelength;
+
+    // Instantiate the snake module
+    snake uut (
+        .clk(clk),
+        .rst(rst),
+        .apple(apple),
+        .collision(collision),
+        .direction(direction),
+        .snake_x_array(snake_x_array),
+        .snake_y_array(snake_y_array),
+        .snakelength(snakelength)
+    );
+
+    // Clock generation: 50 MHz (period = 20ns)
+    always #10 clk = ~clk;
+
+    integer i;
+
+    initial begin
+        // Initialize
+        clk = 0;
+        rst = 1;
+        apple = 0;
+        collision = 0;
+        direction = 2'b11; // RIGHT
+
+        // Hold reset for a few cycles
+        #50;
+        rst = 0;
+
+        // Let it move right for a few cycles
+        #100;
+        direction = 2'b11; // RIGHT
+        #200;
+
+        // Simulate apple eaten
+        apple = 1;
+        #20;
+        apple = 0;
+        #200;
+
+        // Change direction to DOWN
+        direction = 2'b01;
+        #200;
+
+        // Simulate apple eaten again
+        apple = 1;
+        #20;
+        apple = 0;
+        #200;
+
+        // Trigger collision
+        collision = 1;
+        #20;
+        collision = 0;
+        #200;
+
+        // Print final state
+        $display("Final snakelength = %d", snakelength);
+        for (i = 0; i < snakelength; i = i + 1) begin
+            $display("Segment %0d: x = %d, y = %d", i, snake_x_array[i], snake_y_array[i]);
+        end
+    end
+
+endmodule
