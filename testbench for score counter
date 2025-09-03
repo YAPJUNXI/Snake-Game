@@ -1,0 +1,69 @@
+module tb_score_counter;
+
+    reg clk = 0;
+    reg reset = 0;
+    reg move_tick = 0;
+    reg [9:0] snake_x_head;
+    reg [9:0] snake_y_head;
+    reg [9:0] apple_x;
+    reg [9:0] apple_y;
+	 
+	 wire [15:0] score;
+    wire apple_eaten;
+
+ 
+    score_counter uut (
+        .clk(clk),
+        .reset(reset),
+        .move_tick(move_tick),
+        .snake_x_head(snake_x_head),
+        .snake_y_head(snake_y_head),
+        .apple_x(apple_x),
+        .apple_y(apple_y),
+        .score(score),
+        .apple_eaten(apple_eaten)
+    );
+
+    always #5 clk = ~clk;  // 100 MHz clock
+
+	 initial begin		  
+		  // Initial values
+        reset = 1;
+        snake_x_head = 100;
+        snake_y_head = 100;
+        apple_x = 300;
+        apple_y = 300;
+        #20 reset = 0;
+
+        // [Tick 1] Snake not on apple - no score
+        #40 move_tick = 1; #10 move_tick = 0;
+
+        // Move snake to apple
+        snake_x_head = 300;
+        snake_y_head = 300;
+
+        // [Tick 2] Snake eats apple - score should increase to 1
+        #40 move_tick = 1; #10 move_tick = 0;
+		  
+        // [Tick 3] Still on apple - score should NOT increase
+        #40 move_tick = 1; #10 move_tick = 0;
+
+        // Move away from apple
+        snake_x_head = 100;
+        snake_y_head = 100;
+
+        // [Tick 4] No score - moved away
+        #40 move_tick = 1; #10 move_tick = 0;
+		          // Move new apple, simulate next round
+        apple_x = 320;
+        apple_y = 320;
+
+        // Move snake to new apple
+        snake_x_head = 320;
+        snake_y_head = 320;
+
+        // [Tick 5] Snake eats 2nd apple - score should increase to 2
+        #40 move_tick = 1; #10 move_tick = 0;
+		  
+    end
+endmodule
