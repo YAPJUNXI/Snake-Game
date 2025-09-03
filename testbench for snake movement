@@ -1,0 +1,44 @@
+`timescale 1ns / 1ps
+
+module tb_snake_movement_simple;
+
+    reg clk = 0;
+    reg reset = 0;
+    reg [1:0] direction;
+    wire [9:0] snake_x0, snake_y0;
+
+    snake_movement_simple uut (
+        .clk(clk),
+        .reset(reset),
+        .direction(direction),
+        .snake_x0(snake_x0),
+        .snake_y0(snake_y0)
+    );
+
+
+    always #5 clk = ~clk;
+
+    initial begin
+ 
+        direction = 2'b00; /
+
+
+        reset = 1; #20; reset = 0;
+
+      
+        repeat(5) begin
+            #10;
+        end
+
+        direction = 2'b11;
+        repeat(5) begin
+            #10;
+        end
+
+        direction = 2'b01;
+        repeat(5) begin
+            #10;
+        end
+    end
+
+endmodule
