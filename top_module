@@ -1,0 +1,180 @@
+module snake_game (
+    input clk_in1,                  // 100 MHz input clock
+    input reset,                    // Active-high reset
+    input ACL_MISO,                 // SPI accelerometer input
+    output ACL_MOSI, ACL_SCLK, ACL_CSN,
+    output [3:0] vgaRed, vgaGreen, vgaBlue,
+    output [3:0] an,
+    output [6:0] seg,
+    output hSync, vSync
+);
+
+    wire clk_out1;
+    wire pll_locked;
+
+    // PLL for VGA 108MHz
+    clk_wiz_0 pll_inst (.clk_in1(clk_in1), .clk_out1(clk_out1), .reset(0), .locked(pll_locked));
+
+    // SPI clock divider ~4MHz
+    reg [4:0] spi_div = 0;
+    reg spi_clk = 0;
+    always @(posedge clk_in1) begin
+        spi_div <= spi_div + 1;
+        if (spi_div == 0) spi_clk <= ~spi_clk;
+    end
+
+    // SPI accelerometer
+    wire [14:0] acl_data;
+    SPI spi_inst (.iclk(spi_clk), .miso(ACL_MISO), .mosi(ACL_MOSI), .sclk(ACL_SCLK), .cs(ACL_CSN), .acl_data(acl_data));
+
+    // VGA timing
+    reg [10:0] x = 0, y = 0;
+    always @(posedge clk_out1) begin
+        if (x == 1687) begin
+            x <= 0;
+            if (y == 1065) y <= 0;
+            else y <= y + 1;
+        end else x <= x + 1;
+    end
+    wire displayArea = (x < 1280) && (y < 1024);
+    assign hSync = ~((x >= 1328) && (x < 1440));
+    assign vSync = ~((y >= 1025) && (y < 1028));
+
+    // Random for apple position
+    reg [9:0] rand_x = 10'h3FF, rand_y = 10'h2AA;
+    always @(posedge clk_out1) begin
+        rand_x <= {rand_x[8:0], rand_x[9] ^ rand_x[6]};
+        rand_y <= {rand_y[8:0], rand_y[9] ^ rand_y[5]};
+    end
+
+    // Snake parameters
+    reg [9:0] snake_x[0:4];
+    reg [9:0] snake_y[0:4];
+    reg [1:0] direction = 2'b11; // right
+
+    reg [9:0] apple_x = 300;
+    reg [9:0] apple_y = 300;
+
+    wire signed [4:0] x_accel = acl_data[14:10];
+    wire signed [4:0] y_accel = acl_data[9:5];
+
+    reg [22:0] move_div = 0;
+    wire move_tick = (move_div == 0);
+    always @(posedge clk_out1) move_div <= move_div + 1;
+
+    // 60-second timer
+    reg [25:0] sec_div = 0;
+    reg [5:0] seconds = 0;
+    always @(posedge clk_out1 or posedge reset) begin
+        if (reset) begin
+            sec_div <= 0; seconds <= 0;
+        end else begin
+            sec_div <= sec_div + 1;
+            if (sec_div == 0 && seconds < 60) seconds <= seconds + 1;
+        end
+    end
+    wire timeout = (seconds >= 60);
+
+    // Snake initialization and movement
+    integer i;
+    reg [7:0] score = 0;
+    always @(posedge clk_out1 or posedge reset) begin
+        if (reset) begin
+            score <= 0;
+            snake_x[0] <= 640; snake_y[0] <= 512;
+            for (i = 1; i < 5; i = i + 1) begin
+                snake_x[i] <= 640 - (i * 10);
+                snake_y[i] <= 512;
+            end
+        end else if (move_tick && !timeout) begin
+            for (i = 4; i > 0; i = i - 1) begin
+                snake_x[i] <= snake_x[i-1];
+                snake_y[i] <= snake_y[i-1];
+            end
+            case (direction)
+                2'b00: snake_y[0] <= (snake_y[0] == 0)      ? 1024-10 : snake_y[0] - 10;  // UP → Wrap
+                2'b01: snake_y[0] <= (snake_y[0] == 1024-10)? 0       : snake_y[0] + 10;  // DOWN → Wrap
+                2'b10: snake_x[0] <= snake_x[0] - 10;       // LEFT → Dies if out of screen (but collision removed)
+                2'b11: snake_x[0] <= snake_x[0] + 10;       // RIGHT → Dies if out of screen (but collision removed)
+            endcase
+
+            if ((snake_x[0] >= apple_x) && (snake_x[0] < apple_x + 10) &&
+                (snake_y[0] >= apple_y) && (snake_y[0] < apple_y + 10)) begin
+                apple_x <= (rand_x % (1280/10)) * 10;
+                apple_y <= (rand_y % (1024/10)) * 10;
+                score <= (score == 99) ? 99 : score + 1;
+            end
+        end
+    end
+
+    // Accelerometer direction control
+    always @(posedge clk_out1) begin
+        if (move_tick && !timeout) begin
+            if (y_accel < -2) direction <= 2'b00;
+            else if (y_accel > 2) direction <= 2'b01;
+            else if (x_accel < -2) direction <= 2'b10;
+            else if (x_accel > 2) direction <= 2'b11;
+        end
+    end
+
+    // VGA color logic (no collision, just snake and apple)
+    reg snake_here = 0, apple_here = 0;
+    always @(*) begin
+        snake_here = 0; apple_here = 0;
+        if (displayArea && !timeout) begin
+            for (i = 0; i < 5; i = i + 1) begin
+                if ((x >= snake_x[i]) && (x < snake_x[i] + 10) && (y >= snake_y[i]) && (y < snake_y[i] + 10))
+                    snake_here = 1;
+            end
+            if ((x >= apple_x) && (x < apple_x + 10) && (y >= apple_y) && (y < apple_y + 10))
+                apple_here = 1;
+        end
+    end
+
+    assign vgaRed   = (timeout)    ? 4'hF :
+                      (apple_here) ? 4'hF :
+                                    4'h0;
+
+    assign vgaGreen = 4'h0;
+
+    assign vgaBlue  = (timeout)    ? 4'h0 :
+                      (snake_here) ? 4'hF :
+                                    4'h0;
+
+    // ================= 4-digit 7-segment display =================
+    reg [3:0] digit [0:3];
+    always @(*) begin
+        digit[0] = score % 10;          // Units of score → an[0]
+        digit[1] = (score / 10) % 10;   // Tens of score  → an[1]
+        digit[2] = seconds % 10;        // Units of time  → an[2]
+        digit[3] = (seconds / 10) % 10; // Tens of time   → an[3]
+    end
+
+    reg [1:0] seg_sel = 0;
+    reg [16:0] seg_div = 0;
+    always @(posedge clk_out1) begin
+        seg_div <= seg_div + 1;
+        if (seg_div == 0) seg_sel <= seg_sel + 1;
+    end
+
+    assign an = ~(4'b0001 << seg_sel);  // Only 4 active digits
+
+    reg [6:0] seg_out;
+    always @(*) begin
+        case (digit[seg_sel])
+            4'd0: seg_out = 7'b1000000;
+            4'd1: seg_out = 7'b1111001;
+            4'd2: seg_out = 7'b0100100;
+            4'd3: seg_out = 7'b0110000;
+            4'd4: seg_out = 7'b0011001;
+            4'd5: seg_out = 7'b0010010;
+            4'd6: seg_out = 7'b0000010;
+            4'd7: seg_out = 7'b1111000;
+            4'd8: seg_out = 7'b0000000;
+            4'd9: seg_out = 7'b0010000;
+            default: seg_out = 7'b1111111;
+        endcase
+    end
+    assign seg = seg_out;
+
+endmodule
