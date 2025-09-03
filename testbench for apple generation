@@ -1,0 +1,42 @@
+module apple;
+
+    // Testbench signals
+    reg clk;
+    reg rst;
+    reg apple;
+    wire [7:0] score;
+
+
+    marks uut (
+        .clk(clk),
+        .rst(rst),
+        .apple(apple),
+        .score(score)
+    );
+    initial clk = 0;
+    always #5 clk = ~clk;
+
+    // Stimulus block
+    initial begin
+
+        rst = 1;
+        apple = 0;
+
+        #10;
+        rst = 0;
+
+  
+        #10 apple = 1;
+        #10 apple = 0;
+        #10 apple = 1;
+        #10 apple = 1;
+        #10 apple = 0;
+
+        #10 rst = 1;
+        #10 rst = 0;
+
+        #10 apple = 1;
+        #10 apple = 0;
+    end
+
+endmodule
